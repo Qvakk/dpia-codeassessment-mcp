@@ -46,7 +46,7 @@ Container: `technical-dpia-mcp-stdio`
 
 ## Features
 
-- 🔍 Semantic search over GDPR, Datatilsynet, EDPB guidelines (2,456+ documents)
+- 🔍 Semantic search over GDPR, Datatilsynet, EDPB guidelines (12 authoritative sources)
 - 🇳🇴 Norwegian compliance focus (Datatilsynet templates, Personopplysningsloven)
 - 🤖 Multi-provider embeddings (HuggingFace local, OpenAI, Azure OpenAI)
 - ⏰ Auto-updating legal documents (daily at 02:00 UTC)

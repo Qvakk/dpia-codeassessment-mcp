@@ -1,0 +1,13 @@
+source_type,name,url,language,jurisdiction,category,priority,update_frequency,max_depth
+web,Datatilsynet DPIA Guidelines,https://www.datatilsynet.no/en/regulations-and-tools/guidelines/data-protection-impact-assessments/,en,NO,guidance,high,quarterly,1
+web,Datatilsynet Main Guidelines,https://www.datatilsynet.no/en/regulations-and-tools/guidelines/,en,NO,guidance,high,quarterly,1
+pdf,Datatilsynet DPIA Checklist,https://www.datatilsynet.no/contentassets/8b767689abb14926af27820c9c2fb89e/sjekkliste-for-dpiafaser.pdf,no,NO,guidance,high,yearly,0
+pdf,Datatilsynet DPIA List,https://www.datatilsynet.no/globalassets/global/dokumenter-pdfer-skjema-ol/regelverk/veiledere/dpia-veileder/dpialist280119.pdf,no,NO,guidance,high,yearly,0
+web,Datatilsynet DPIA Assessment (Norwegian),https://www.datatilsynet.no/rettigheter-og-plikter/virksomhetenes-plikter/,no,NO,guidance,high,quarterly,1
+web,European Commission - When is a DPIA required,https://commission.europa.eu/law/law-topic/data-protection/rules-business-and-organisations/obligations/when-data-protection-impact-assessment-dpia-required_en,en,EU,guidance,high,as_needed,0
+web,Schrems II Decision,https://curia.europa.eu/juris/liste.jsf?num=C-311/18,en,EU,case_law,high,static,0
+web,Article 35 GDPR - Data protection impact assessment,https://gdpr-info.eu/art-35-gdpr/,en,EU,regulation,high,static,0
+pdf,NIST Privacy Framework,https://nvlpubs.nist.gov/nistpubs/CSWP/NIST.CSWP.01162020.pdf,en,US,standard,medium,yearly,0
+web,Norwegian Personal Data Act (Lovdata),https://lovdata.no/dokument/NLE/lov/2018-06-15-38,no,NO,regulation,high,yearly,1
+web,NTNU DPIA Guide,https://i.ntnu.no/wiki/-/wiki/English/Data%2Bprotection%2Bimpact%2Bassessment,en,NO,guidance,medium,yearly,1
+pdf,Norwegian Personal Data Act,https://www.datatilsynet.no/contentassets/46bbe14bf19742e4b7cb0fd24d13b552/the-personal-data-act-english-translation-unofficial.pdf,en,NO,regulation,high,yearly,0

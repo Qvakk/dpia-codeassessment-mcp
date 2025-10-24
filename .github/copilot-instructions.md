@@ -12,7 +12,7 @@
 
 ## Architecture
 - `server.py` - MCP tool definitions and handlers
-- `vector_store.py` - ChromaDB semantic search (2,456 legal documents)
+- `vector_store.py` - ChromaDB semantic search (12 legal sources)
 - `embeddings.py` - Multi-provider embedding service
 - `documentation_scraper.py` - Web scraper for GDPR/Datatilsynet sources
 - `scheduler.py` - Daily document refresh (02:00 UTC)

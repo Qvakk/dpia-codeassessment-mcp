@@ -43,7 +43,7 @@ venv.bak/
 *~
 
 # Data directories
-data/
+data/chroma_db
 *.db
 *.sqlite
 *.sqlite3
@@ -90,3 +90,5 @@ htmlcov/
 .mypy_cache/
 .dmypy.json
 dmypy.json
+
+

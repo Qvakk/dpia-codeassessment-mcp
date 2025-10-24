@@ -112,6 +112,55 @@ class InputSanitizer:
             return False
     
     @staticmethod
+    def sanitize_path(file_path: str, allowed_dirs: List[str] = None) -> str:
+        """
+        Sanitize and validate file path to prevent path traversal attacks.
+        
+        Args:
+            file_path: File path to sanitize
+            allowed_dirs: List of allowed directory paths
+            
+        Returns:
+            Sanitized and validated path
+            
+        Raises:
+            ValueError: If path is invalid or unsafe
+        """
+        if not file_path:
+            raise ValueError("File path cannot be empty")
+        
+        # Remove null bytes
+        file_path = file_path.replace('\x00', '')
+        
+        # Normalize path separators
+        file_path = os.path.normpath(file_path)
+        
+        # Check for path traversal patterns
+        if '..' in file_path:
+            logger.warning(f"Path traversal attempt detected: {file_path}")
+            raise ValueError("Path traversal not allowed")
+        
+        # Get absolute path and check it's within allowed directories
+        try:
+            abs_path = os.path.abspath(file_path)
+            
+            if allowed_dirs:
+                allowed = any(
+                    abs_path.startswith(os.path.abspath(allowed_dir))
+                    for allowed_dir in allowed_dirs
+                )
+                
+                if not allowed:
+                    logger.warning(f"File path outside allowed directories")
+                    raise ValueError("File path outside allowed directories")
+            
+            return abs_path
+            
+        except Exception as e:
+            logger.error(f"File path sanitization error: {e}")
+            raise ValueError(f"Invalid file path: {e}")
+    
+    @staticmethod
     def validate_file_path(file_path: str, allowed_dirs: List[str] = None) -> bool:
         """
         Validate file path to prevent path traversal attacks.

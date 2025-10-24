@@ -10,7 +10,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: technical-dpia-mcp-stdio
+    container_name: dpia-codeassessment-mcp
     profiles: ["stdio", ""]  # Active by default
     restart: unless-stopped
     stdin_open: true

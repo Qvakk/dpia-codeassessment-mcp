@@ -10,7 +10,7 @@ An MCP server for **Data Protection Impact Assessment (DPIA)** analysis with sem
 docker-compose up -d
 ```
 
-Container: `technical-dpia-mcp-stdio`
+Container: `dpia-codeassessment-mcp`
 
 ### MCP Client Configuration
 
@@ -21,7 +21,7 @@ Container: `technical-dpia-mcp-stdio`
     "technical-dpia-mcp": {
       "command": "docker",
       "args": [
-        "exec", "-i", "technical-dpia-mcp-stdio",
+        "exec", "-i", "dpia-codeassessment-mcp",
         "python", "-m", "technical_dpia_mcp.server"
       ]
     }
@@ -72,7 +72,7 @@ Key variables in `.env`:
 docker-compose up -d
 
 # View logs
-docker logs technical-dpia-mcp-stdio -f
+docker logs dpia-codeassessment-mcp -f
 
 # Stop
 docker-compose down

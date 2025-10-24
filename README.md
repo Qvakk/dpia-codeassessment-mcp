@@ -89,16 +89,6 @@ docker-compose --profile http up -d
 docker logs technical-dpia-mcp-http -f
 ```
 
-## Security
-
-- ✅ OWASP MCP Top 10 compliance
-- ✅ Input sanitization & path validation
-- ✅ Non-root user execution
-- ✅ Environment-based secrets (no hardcoding)
-- ✅ Minimal base image (Python 3.12-slim)
-
-See [SECURITY.md](SECURITY.md) for details.
-
 ## Legal Sources
 
 13 authoritative sources indexed:

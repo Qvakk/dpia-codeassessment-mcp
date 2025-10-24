@@ -1,0 +1,54 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Virtual environment
+venv/
+.venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+.gitignore
+
+# Environment files
+.env
+.env.*
+!.env.example
+
+# Data
+data/
+*.db
+*.sqlite
+
+# Logs
+*.log
+logs/
+
+# Docker specific
+.dockerignore
+Dockerfile
+docker-compose.yml
+docker-compose.override.yml
+
+# Documentation
+README.md
+docs/
+*.md
+!.github/*.md
+
+# Testing
+tests/
+test_*.py
+
+# Build artifacts
+dist/
+build/
+*.egg-info/

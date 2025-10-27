@@ -2,7 +2,14 @@
 # 
 # Usage:
 #   Local MCP (stdio):  docker-compose up -d
-#   HTTP/Kubernetes:    docker-compose --profile http up -d
+#   HTTP mode:          docker-compose --profile http up -d
+#
+# HTTP Endpoints (when TRANSPORT=http):
+#   - GET    /health  - Health check
+#   - POST   /mcp     - StreamableHTTP (recommended)
+#   - GET    /mcp     - StreamableHTTP SSE stream
+#   - DELETE /mcp     - StreamableHTTP session termination
+#   - GET    /sse     - Legacy SSE endpoint
 
 services:
   # Default: stdio mode for local MCP usage via docker exec
@@ -55,7 +62,8 @@ services:
         max-size: "10m"
         max-file: "3"
 
-  # HTTP mode: For Kubernetes deployments and remote access
+  # HTTP mode: For Azure Container Apps, Kubernetes, and remote access
+  # Exposes StreamableHTTP (/mcp) and legacy SSE (/sse) endpoints
   technical-dpia-mcp-http:
     build:
       context: .

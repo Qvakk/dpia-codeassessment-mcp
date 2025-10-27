@@ -50,7 +50,7 @@ Container: `dpia-codeassessment-mcp`
 - 🇳🇴 Norwegian compliance focus (Datatilsynet templates, Personopplysningsloven)
 - 🤖 Multi-provider embeddings (HuggingFace local, OpenAI, Azure OpenAI)
 - ⏰ Auto-updating legal documents (daily at 02:00 UTC)
-- 🔌 Dual transport: stdio (local) or HTTP (remote)
+- 🔌 Dual transport: stdio (local) or HTTP (StreamableHTTP + SSE)
 - 🐳 Docker containerized, non-root user, minimal footprint
 
 ## Environment Configuration
@@ -85,8 +85,35 @@ docker-compose down
 docker-compose --profile http up -d
 
 # Container: technical-dpia-mcp-http
-# Endpoints: /health, /sse
+# Endpoints: 
+#   - /health (health check)
+#   - /mcp (StreamableHTTP - recommended)
+#   - /sse (legacy SSE)
 docker logs technical-dpia-mcp-http -f
+```
+
+**MCP Client Configuration (StreamableHTTP):**
+```json
+{
+  "mcpServers": {
+    "dpia-mcp": {
+      "type": "streamable-http",
+      "url": "http://localhost:3003/mcp"
+    }
+  }
+}
+```
+
+**MCP Client Configuration (SSE - legacy):**
+```json
+{
+  "mcpServers": {
+    "dpia-mcp": {
+      "type": "sse",
+      "url": "http://localhost:3003/sse"
+    }
+  }
+}
 ```
 
 ## Legal Sources

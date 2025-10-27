@@ -1290,17 +1290,20 @@ async def main():
 
 
 async def run_http_server(server_instance: MCPServerTemplate):
-    """Run the server in HTTP mode using SSE transport."""
+    """Run the server in HTTP mode using StreamableHTTP and SSE transports."""
     import uvicorn
     from starlette.applications import Starlette
-    from starlette.routing import Route
+    from starlette.routing import Route, Mount
     from starlette.responses import JSONResponse
-    from sse_starlette import EventSourceResponse
-    from mcp.server.sse import SseServerTransport
+    from starlette.middleware.cors import CORSMiddleware
+    from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
+    from starlette.types import Receive, Scope, Send
+    import contextlib
+    from collections.abc import AsyncIterator
     
     port = int(os.getenv("HTTP_PORT", "3000"))
     
-    logger.info(f"Starting HTTP server on port {port}")
+    logger.info(f"Starting HTTP server on port {port} (StreamableHTTP + SSE)")
     
     # Health check endpoint
     async def health(request):
@@ -1308,32 +1311,67 @@ async def run_http_server(server_instance: MCPServerTemplate):
             "status": "healthy",
             "server": SERVER_NAME,
             "version": SERVER_VERSION,
-            "transport": "http"
+            "transport": "http",
+            "endpoints": {
+                "health": "/health",
+                "mcp": "/mcp (StreamableHTTP)",
+                "sse": "/sse (legacy SSE)"
+            }
         })
     
-    # MCP SSE endpoint
+    # Create StreamableHTTP session manager (primary transport)
+    session_manager = StreamableHTTPSessionManager(
+        app=server_instance.get_server(),
+        event_store=None,  # Can add InMemoryEventStore for resumability
+        json_response=False,  # Use SSE streams
+        stateless=False,  # Maintain session state
+    )
+    
+    # StreamableHTTP handler
+    async def handle_streamable_http(scope: Scope, receive: Receive, send: Send) -> None:
+        await session_manager.handle_request(scope, receive, send)
+    
+    # Legacy SSE endpoint (for backward compatibility)
     async def handle_sse(request):
+        from mcp.server.sse import SseServerTransport
+        
         async with SseServerTransport("/messages") as (read_stream, write_stream):
             await server_instance.get_server().run(
                 read_stream,
                 write_stream,
                 server_instance.get_server().create_initialization_options(),
             )
-            
-        # Return SSE response
-        async def event_generator():
-            # This will be handled by the SSE transport
-            yield
-        
-        return EventSourceResponse(event_generator())
+    
+    # Lifespan context manager for session manager
+    @contextlib.asynccontextmanager
+    async def lifespan(app: Starlette) -> AsyncIterator[None]:
+        """Context manager for session manager lifecycle."""
+        async with session_manager.run():
+            logger.info("StreamableHTTP session manager started")
+            try:
+                yield
+            finally:
+                logger.info("StreamableHTTP session manager shutting down")
     
     # Create Starlette app
     app = Starlette(
         debug=False,
         routes=[
             Route("/health", health, methods=["GET"]),
-            Route("/sse", handle_sse, methods=["GET"]),
+            Mount("/mcp", app=handle_streamable_http),  # StreamableHTTP (primary)
+            Route("/sse", handle_sse, methods=["GET"]),  # Legacy SSE
         ],
+        lifespan=lifespan,
+    )
+    
+    # Add CORS middleware for browser-based clients
+    app = CORSMiddleware(
+        app,
+        allow_origins=["*"],  # Configure appropriately for production
+        allow_credentials=True,
+        allow_methods=["GET", "POST", "DELETE"],
+        allow_headers=["*"],
+        expose_headers=["mcp-session-id", "mcp-protocol-version"],
     )
     
     # Run server

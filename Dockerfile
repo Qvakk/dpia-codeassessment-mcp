@@ -21,7 +21,7 @@ COPY src/ ./src/
 RUN pip install --no-cache-dir -e .
 
 # Add src to PYTHONPATH so the module is importable
-ENV PYTHONPATH=/app/src:$PYTHONPATH
+ENV PYTHONPATH=/app/src
 
 # Create data directory for ChromaDB
 RUN mkdir -p /app/data/chroma_db

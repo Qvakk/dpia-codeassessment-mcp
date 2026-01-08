@@ -3,13 +3,15 @@ PDF scraper for legal documents.
 Downloads and extracts text from PDF files.
 """
 
+import asyncio
+import importlib.util
 import logging
 import os
-import tempfile
 from pathlib import Path
-from typing import List, Optional, Dict
-import requests
+from typing import Any
 from urllib.parse import urlparse
+
+import httpx
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +23,7 @@ logging.getLogger("pypdf._cmap").setLevel(logging.CRITICAL)
 class PDFScraper:
     """Scrape and extract text from PDF documents."""
     
-    def __init__(self, cache_dir: Optional[str] = None):
+    def __init__(self, cache_dir: str | None = None):
         """
         Initialize PDF scraper.
         
@@ -39,31 +41,22 @@ class PDFScraper:
         logger.info(f"PDF scraper initialized with backend: {self.pdf_backend}")
     
     def _detect_pdf_backend(self) -> str:
-        """Detect available PDF extraction library."""
-        try:
-            import pypdf
+        """Detect available PDF extraction library using importlib."""
+        if importlib.util.find_spec("pypdf") is not None:
             return "pypdf"
-        except ImportError:
-            pass
         
-        try:
-            import pdfplumber
+        if importlib.util.find_spec("pdfplumber") is not None:
             return "pdfplumber"
-        except ImportError:
-            pass
         
-        try:
-            import PyPDF2
+        if importlib.util.find_spec("PyPDF2") is not None:
             return "pypdf2"
-        except ImportError:
-            pass
         
         logger.warning("No PDF library found. Install: pip install pypdf or pdfplumber")
         return "none"
     
-    def download_pdf(self, url: str, filename: Optional[str] = None) -> Optional[Path]:
+    async def download_pdf_async(self, url: str, filename: str | None = None) -> Path | None:
         """
-        Download PDF from URL.
+        Download PDF from URL asynchronously using httpx.
         
         Args:
             url: URL to PDF file
@@ -87,15 +80,16 @@ class PDFScraper:
                 logger.info(f"Using cached PDF: {filepath}")
                 return filepath
             
-            # Download
+            # Download asynchronously with httpx
             logger.info(f"Downloading PDF: {url}")
-            response = requests.get(url, timeout=30, stream=True)
-            response.raise_for_status()
-            
-            # Save to cache
-            with open(filepath, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=8192):
-                    f.write(chunk)
+            timeout = httpx.Timeout(10.0, connect=5.0, read=30.0)
+            async with httpx.AsyncClient(timeout=timeout) as client, client.stream("GET", url) as response:
+                response.raise_for_status()
+                
+                # Save to cache
+                with open(filepath, 'wb') as f:
+                    async for chunk in response.aiter_bytes(chunk_size=8192):
+                        f.write(chunk)
             
             logger.info(f"PDF downloaded: {filepath}")
             return filepath
@@ -103,6 +97,28 @@ class PDFScraper:
         except Exception as e:
             logger.error(f"Error downloading PDF from {url}: {e}")
             return None
+    
+    def download_pdf(self, url: str, filename: str | None = None) -> Path | None:
+        """
+        Download PDF from URL (sync wrapper for async download).
+        
+        Args:
+            url: URL to PDF file
+            filename: Optional filename to save as
+        
+        Returns:
+            Path to downloaded file or None on error
+        """
+        try:
+            # Try to get the running event loop
+            loop = asyncio.get_running_loop()
+            # If we're already in an async context, use asyncio.to_thread
+            return asyncio.run_coroutine_threadsafe(
+                self.download_pdf_async(url, filename), loop
+            ).result(timeout=60)
+        except RuntimeError:
+            # No running loop, create a new one
+            return asyncio.run(self.download_pdf_async(url, filename))
     
     def extract_text_pypdf(self, pdf_path: Path, timeout: int = 10) -> str:
         """Extract text using pypdf library with timeout and error handling."""
@@ -166,7 +182,7 @@ class PDFScraper:
         
         return "\n".join(text_parts)
     
-    def extract_text(self, pdf_path: Path, timeout: int = 10) -> Optional[str]:
+    def extract_text(self, pdf_path: Path, timeout: int = 10) -> str | None:
         """
         Extract text from PDF file with timeout protection.
         
@@ -196,7 +212,7 @@ class PDFScraper:
             logger.error(f"Error extracting text from {pdf_path}: {e}")
             return None
     
-    def scrape_pdf(self, url: str, metadata: Optional[Dict] = None, timeout: int = 10) -> Optional[Dict]:
+    def scrape_pdf(self, url: str, metadata: dict[str, Any] | None = None, timeout: int = 10) -> dict[str, Any] | None:
         """
         Download and extract text from PDF URL with timeout and error handling.
         
@@ -236,7 +252,7 @@ class PDFScraper:
             logger.error(f"Error scraping PDF {url}: {e}")
             return None
     
-    def scrape_multiple_pdfs(self, urls: List[str]) -> List[Dict]:
+    def scrape_multiple_pdfs(self, urls: list[str]) -> list[dict[str, Any]]:
         """
         Scrape multiple PDFs.
         

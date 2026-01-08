@@ -7,7 +7,6 @@ Embedding service with support for multiple providers:
 
 import logging
 import os
-from typing import List, Optional
 from enum import Enum
 
 logger = logging.getLogger(__name__)
@@ -25,9 +24,9 @@ class EmbeddingService:
     
     def __init__(
         self,
-        provider: Optional[str] = None,
-        model: Optional[str] = None,
-        dimension: Optional[int] = None,
+        provider: str | None = None,
+        model: str | None = None,
+        dimension: int | None = None,
     ):
         """
         Initialize embedding service.
@@ -56,7 +55,7 @@ class EmbeddingService:
             f"Initialized {self.provider} embedding service with dimension {self.dimension}"
         )
     
-    def _init_huggingface(self, model: Optional[str] = None):
+    def _init_huggingface(self, model: str | None = None):
         """Initialize HuggingFace sentence-transformers."""
         try:
             from sentence_transformers import SentenceTransformer
@@ -75,17 +74,17 @@ class EmbeddingService:
             
             logger.info(f"HuggingFace model loaded successfully (dim={self.dimension})")
             
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 "sentence-transformers not installed. "
                 "Install with: pip install sentence-transformers"
-            )
+            ) from e
     
-    def _init_openai(self, model: Optional[str] = None):
+    def _init_openai(self, model: str | None = None):
         """Initialize OpenAI embeddings."""
         try:
-            from openai import OpenAI
             import tiktoken
+            from openai import OpenAI
             
             api_key = os.getenv("OPENAI_API_KEY")
             if not api_key:
@@ -105,16 +104,16 @@ class EmbeddingService:
             
             logger.info(f"OpenAI embedding service initialized: {self.model_name}")
             
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 "openai not installed. Install with: pip install openai tiktoken"
-            )
+            ) from e
     
-    def _init_azure(self, model: Optional[str] = None):
+    def _init_azure(self, model: str | None = None):
         """Initialize Azure OpenAI embeddings."""
         try:
-            from openai import AzureOpenAI
             import tiktoken
+            from openai import AzureOpenAI
             
             api_key = os.getenv("AZURE_OPENAI_API_KEY")
             endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
@@ -146,12 +145,12 @@ class EmbeddingService:
                 f"Azure OpenAI embedding service initialized: {self.model_name}"
             )
             
-        except ImportError:
+        except ImportError as e:
             raise ImportError(
                 "openai not installed. Install with: pip install openai tiktoken"
-            )
+            ) from e
     
-    def encode(self, texts: List[str], show_progress: bool = False) -> List[List[float]]:
+    def encode(self, texts: list[str], show_progress: bool = False) -> list[list[float]]:
         """
         Generate embeddings for a list of texts.
         
@@ -174,9 +173,9 @@ class EmbeddingService:
     
     def _encode_huggingface(
         self,
-        texts: List[str],
+        texts: list[str],
         show_progress: bool = False
-    ) -> List[List[float]]:
+    ) -> list[list[float]]:
         """Encode using HuggingFace model."""
         # Truncate texts to max token length
         max_length = self.model.max_seq_length
@@ -199,7 +198,7 @@ class EmbeddingService:
         
         return embeddings.tolist()
     
-    def _encode_openai(self, texts: List[str]) -> List[List[float]]:
+    def _encode_openai(self, texts: list[str]) -> list[list[float]]:
         """Encode using OpenAI API."""
         embeddings = []
         
@@ -221,7 +220,7 @@ class EmbeddingService:
         
         return embeddings
     
-    def _encode_azure(self, texts: List[str]) -> List[List[float]]:
+    def _encode_azure(self, texts: list[str]) -> list[list[float]]:
         """Encode using Azure OpenAI API."""
         embeddings = []
         

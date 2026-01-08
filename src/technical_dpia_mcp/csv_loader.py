@@ -7,9 +7,9 @@ import csv
 import logging
 import os
 from dataclasses import dataclass
-from pathlib import Path
-from typing import List, Optional
 from enum import Enum
+from pathlib import Path
+from typing import Self
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +27,7 @@ class Priority(Enum):
     LOW = "low"
 
 
-@dataclass
+@dataclass(slots=True)
 class LegalSource:
     """Represents a legal document source."""
     source_type: SourceType
@@ -41,7 +41,7 @@ class LegalSource:
     max_depth: int = 2
     
     @classmethod
-    def from_csv_row(cls, row: dict) -> "LegalSource":
+    def from_csv_row(cls, row: dict) -> Self:
         """Create LegalSource from CSV row."""
         return cls(
             source_type=SourceType(row["source_type"].lower()),
@@ -59,7 +59,7 @@ class LegalSource:
 class CSVSourceLoader:
     """Load and manage legal sources from CSV file."""
     
-    def __init__(self, csv_path: Optional[str] = None):
+    def __init__(self, csv_path: str | None = None):
         """
         Initialize CSV loader.
         
@@ -82,9 +82,9 @@ class CSVSourceLoader:
         logger.info(f"CSV source loader initialized with: {self.csv_path}")
     
     def load_sources(self, 
-                     filter_priority: Optional[List[Priority]] = None,
-                     filter_jurisdiction: Optional[List[str]] = None,
-                     filter_type: Optional[List[SourceType]] = None) -> List[LegalSource]:
+                     filter_priority: list[Priority] | None = None,
+                     filter_jurisdiction: list[str] | None = None,
+                     filter_type: list[SourceType] | None = None) -> list[LegalSource]:
         """
         Load sources from CSV with optional filtering.
         
@@ -103,7 +103,7 @@ class CSVSourceLoader:
         sources = []
         
         try:
-            with open(self.csv_path, 'r', encoding='utf-8') as f:
+            with open(self.csv_path, encoding='utf-8') as f:
                 reader = csv.DictReader(f)
                 
                 for row in reader:
@@ -138,7 +138,7 @@ class CSVSourceLoader:
             logger.error(f"Error reading CSV file: {e}")
             return []
     
-    def get_urls(self, **filters) -> List[str]:
+    def get_urls(self, **filters) -> list[str]:
         """
         Get list of URLs from sources.
         
@@ -151,19 +151,19 @@ class CSVSourceLoader:
         sources = self.load_sources(**filters)
         return [source.url for source in sources]
     
-    def get_sources_by_priority(self, priority: Priority) -> List[LegalSource]:
+    def get_sources_by_priority(self, priority: Priority) -> list[LegalSource]:
         """Get all sources with specific priority."""
         return self.load_sources(filter_priority=[priority])
     
-    def get_sources_by_jurisdiction(self, jurisdiction: str) -> List[LegalSource]:
+    def get_sources_by_jurisdiction(self, jurisdiction: str) -> list[LegalSource]:
         """Get all sources for specific jurisdiction."""
         return self.load_sources(filter_jurisdiction=[jurisdiction])
     
-    def get_pdf_sources(self) -> List[LegalSource]:
+    def get_pdf_sources(self) -> list[LegalSource]:
         """Get all PDF sources."""
         return self.load_sources(filter_type=[SourceType.PDF])
     
-    def get_web_sources(self) -> List[LegalSource]:
+    def get_web_sources(self) -> list[LegalSource]:
         """Get all web sources."""
         return self.load_sources(filter_type=[SourceType.WEB])
 

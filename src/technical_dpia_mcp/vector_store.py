@@ -7,8 +7,7 @@ Vector store using ChromaDB with dual search modes:
 import logging
 import os
 import time
-from typing import Any, Dict, List, Optional
-from collections import defaultdict
+from typing import Any
 
 import chromadb
 from chromadb.config import Settings
@@ -24,8 +23,8 @@ class VectorStore:
     
     def __init__(
         self,
-        persist_directory: Optional[str] = None,
-        collection_name: Optional[str] = None,
+        persist_directory: str | None = None,
+        collection_name: str | None = None,
         use_embeddings: bool = True,
     ):
         """
@@ -45,9 +44,9 @@ class VectorStore:
             "documentation"
         )
         self.use_embeddings = use_embeddings
-        self.embedding_service: Optional[EmbeddingService] = None
-        self.client: Optional[chromadb.Client] = None
-        self.collection: Optional[chromadb.Collection] = None
+        self.embedding_service: EmbeddingService | None = None
+        self.client: chromadb.Client | None = None
+        self.collection: chromadb.Collection | None = None
         
         logger.info(
             f"VectorStore initialized (embeddings={'enabled' if use_embeddings else 'disabled'})"
@@ -68,9 +67,7 @@ class VectorStore:
             # Initialize embedding service if needed
             if self.use_embeddings:
                 self.embedding_service = EmbeddingService()
-                embedding_dimension = self.embedding_service.get_dimension()
-            else:
-                embedding_dimension = 384  # Default dimension for dummy embeddings
+                # Embedding dimension is stored in the service
             
             # Get or create collection
             try:
@@ -95,7 +92,7 @@ class VectorStore:
     
     async def add_documents(
         self,
-        documents: List[Dict[str, Any]],
+        documents: list[dict[str, Any]],
         show_progress: bool = False,
     ):
         """
@@ -151,8 +148,8 @@ class VectorStore:
         self,
         query: str,
         limit: int = 5,
-        use_embeddings: Optional[bool] = None,
-    ) -> List[Dict[str, Any]]:
+        use_embeddings: bool | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Search for documents.
         
@@ -171,7 +168,7 @@ class VectorStore:
         else:
             return await self._search_keyword(query, limit)
     
-    async def _search_semantic(self, query: str, limit: int) -> List[Dict[str, Any]]:
+    async def _search_semantic(self, query: str, limit: int) -> list[dict[str, Any]]:
         """Perform semantic search using embeddings."""
         start_time = time.time()
         
@@ -202,7 +199,7 @@ class VectorStore:
         
         return documents
     
-    async def _search_keyword(self, query: str, limit: int) -> List[Dict[str, Any]]:
+    async def _search_keyword(self, query: str, limit: int) -> list[dict[str, Any]]:
         """Perform keyword-based search."""
         start_time = time.time()
         
@@ -216,8 +213,8 @@ class VectorStore:
         query_terms = set(query_lower.split())
         
         scored_docs = []
-        for i, (doc_id, content, metadata) in enumerate(
-            zip(all_docs["ids"], all_docs["documents"], all_docs["metadatas"])
+        for doc_id, content, metadata in zip(
+            all_docs["ids"], all_docs["documents"], all_docs["metadatas"], strict=True
         ):
             content_lower = content.lower()
             title_lower = metadata.get("title", "").lower()
@@ -261,7 +258,7 @@ class VectorStore:
         
         return results
     
-    async def get_document(self, doc_id: str) -> Optional[Dict[str, Any]]:
+    async def get_document(self, doc_id: str) -> dict[str, Any] | None:
         """Get a specific document by ID."""
         try:
             result = self.collection.get(

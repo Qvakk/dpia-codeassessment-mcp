@@ -3,17 +3,16 @@ Documentation scraper for crawling and extracting content from web pages.
 Extended with CSV-based source management and PDF support.
 """
 
-import asyncio
+import hashlib
 import logging
 import os
-import hashlib
-from typing import Any, Dict, List, Optional, Set
+from typing import Any
 from urllib.parse import urljoin, urlparse
 
 import httpx
 from bs4 import BeautifulSoup
 
-from .csv_loader import CSVSourceLoader, SourceType, Priority
+from .csv_loader import CSVSourceLoader, SourceType
 from .pdf_scraper import PDFScraper
 
 logger = logging.getLogger(__name__)
@@ -24,8 +23,8 @@ class DocumentationScraper:
     
     def __init__(
         self,
-        base_urls: Optional[List[str]] = None,
-        swagger_urls: Optional[List[str]] = None,
+        base_urls: list[str] | None = None,
+        swagger_urls: list[str] | None = None,
         max_depth: int = 2,
         max_pages: int = 1000,
         timeout: int = 30,
@@ -47,8 +46,8 @@ class DocumentationScraper:
         self.pdf_scraper = PDFScraper()
         
         # Initialize state tracking
-        self.visited_urls: Set[str] = set()
-        self.documents: List[Dict[str, Any]] = []
+        self.visited_urls: set[str] = set()
+        self.documents: list[dict[str, Any]] = []
         self.timeout = timeout
         self.user_agent = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
         
@@ -67,7 +66,7 @@ class DocumentationScraper:
             self.swagger_urls = swagger_urls if isinstance(swagger_urls, list) else [swagger_urls]
         
         # Store source-specific max_depth mapping
-        self.url_max_depth: Dict[str, int] = {}
+        self.url_max_depth: dict[str, int] = {}
         
         # Load sources from CSV if enabled
         if self.csv_loader:
@@ -86,7 +85,7 @@ class DocumentationScraper:
         
         self.max_depth = max_depth or int(os.getenv("CRAWL_MAX_DEPTH", "3"))
         self.max_pages = max_pages or int(os.getenv("CRAWL_MAX_PAGES", "1000"))
-    async def scrape(self) -> List[Dict[str, Any]]:
+    async def scrape(self) -> list[dict[str, Any]]:
         """
         Scrape documentation from all configured URLs (web + PDFs).
         
@@ -179,7 +178,7 @@ class DocumentationScraper:
         url: str,
         depth: int,
         base_url: str,
-        max_depth: int = None,
+        max_depth: int | None = None,
     ):
         """
         Crawl a URL and extract documents.
@@ -246,7 +245,7 @@ class DocumentationScraper:
         except Exception as e:
             logger.error(f"Error crawling {url}: {e}")
     
-    def _extract_content(self, soup: BeautifulSoup, url: str) -> Dict[str, str]:
+    def _extract_content(self, soup: BeautifulSoup, url: str) -> dict[str, str]:
         """
         Extract clean content from HTML.
         
@@ -295,7 +294,7 @@ class DocumentationScraper:
             "text": text,
         }
     
-    def _extract_links(self, soup: BeautifulSoup, base: str, base_url: str) -> List[str]:
+    def _extract_links(self, soup: BeautifulSoup, base: str, base_url: str) -> list[str]:
         """
         Extract and normalize links from HTML.
         
@@ -335,10 +334,10 @@ class DocumentationScraper:
     
     def chunk_documents(
         self,
-        documents: List[Dict[str, Any]],
-        chunk_size: Optional[int] = None,
-        chunk_overlap: Optional[int] = None,
-    ) -> List[Dict[str, Any]]:
+        documents: list[dict[str, Any]],
+        chunk_size: int | None = None,
+        chunk_overlap: int | None = None,
+    ) -> list[dict[str, Any]]:
         """
         Split documents into smaller chunks.
         

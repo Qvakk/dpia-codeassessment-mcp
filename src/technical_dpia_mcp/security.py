@@ -8,11 +8,11 @@ Protects against OWASP MCP Top 10 vulnerabilities:
 """
 
 import html
-import re
-import os
-from typing import Any, Dict, List
-from urllib.parse import urlparse
 import logging
+import os
+import re
+from typing import Any, ClassVar
+from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 class InputSanitizer:
     """Sanitizes and validates user inputs to prevent injection attacks."""
     
-    MAX_LENGTHS = {
+    MAX_LENGTHS: ClassVar[dict[str, int]] = {
         'query': 5000,
         'url': 2048,
         'filename': 255,
@@ -76,7 +76,7 @@ class InputSanitizer:
         return query.strip()
     
     @staticmethod
-    def validate_url(url: str, allowed_schemes: List[str] = None) -> bool:
+    def validate_url(url: str, allowed_schemes: list[str] | None = None) -> bool:
         """
         Validate URL is safe and uses allowed schemes.
         
@@ -102,7 +102,7 @@ class InputSanitizer:
             
             # Check for suspicious characters
             if any(char in url for char in ['<', '>', '"', "'", '`']):
-                logger.warning(f"Suspicious characters in URL")
+                logger.warning("Suspicious characters in URL")
                 return False
             
             return True
@@ -112,7 +112,7 @@ class InputSanitizer:
             return False
     
     @staticmethod
-    def sanitize_path(file_path: str, allowed_dirs: List[str] = None) -> str:
+    def sanitize_path(file_path: str, allowed_dirs: list[str] | None = None) -> str:
         """
         Sanitize and validate file path to prevent path traversal attacks.
         
@@ -151,17 +151,17 @@ class InputSanitizer:
                 )
                 
                 if not allowed:
-                    logger.warning(f"File path outside allowed directories")
+                    logger.warning("File path outside allowed directories")
                     raise ValueError("File path outside allowed directories")
             
             return abs_path
             
         except Exception as e:
             logger.error(f"File path sanitization error: {e}")
-            raise ValueError(f"Invalid file path: {e}")
+            raise ValueError(f"Invalid file path: {e}") from e
     
     @staticmethod
-    def validate_file_path(file_path: str, allowed_dirs: List[str] = None) -> bool:
+    def validate_file_path(file_path: str, allowed_dirs: list[str] | None = None) -> bool:
         """
         Validate file path to prevent path traversal attacks.
         
@@ -191,7 +191,7 @@ class InputSanitizer:
                 )
                 
                 if not allowed:
-                    logger.warning(f"File path outside allowed directories")
+                    logger.warning("File path outside allowed directories")
                     return False
             
             return True
@@ -233,7 +233,7 @@ class InputSanitizer:
         return data
 
 
-def sanitize_tool_arguments(arguments: Dict[str, Any]) -> Dict[str, Any]:
+def sanitize_tool_arguments(arguments: dict[str, Any]) -> dict[str, Any]:
     """
     Sanitize tool arguments before execution.
     

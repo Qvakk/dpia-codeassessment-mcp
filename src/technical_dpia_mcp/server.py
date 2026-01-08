@@ -9,23 +9,24 @@ import asyncio
 import hashlib
 import logging
 import os
-from typing import Any, Dict, List, Optional
+from datetime import datetime
+from typing import Any
 
 from mcp.server import Server
 from mcp.server.stdio import stdio_server
 from mcp.types import (
-    Resource,
-    Tool,
-    TextContent,
-    Prompt,
     GetPromptResult,
+    Prompt,
     PromptMessage,
+    Resource,
+    TextContent,
+    Tool,
 )
 
 from .documentation_scraper import DocumentationScraper
-from .vector_store import VectorStore
 from .scheduler import DocumentationScheduler
 from .security import InputSanitizer, sanitize_tool_arguments
+from .vector_store import VectorStore
 
 # Configure logging
 log_level = os.getenv("LOG_LEVEL", "INFO").upper()
@@ -46,6 +47,7 @@ class MCPServerTemplate:
     def __init__(self):
         """Initialize the MCP server."""
         self.server = Server(SERVER_NAME)
+        self._background_task: asyncio.Task[None] | None = None
         
         # Parse configuration
         use_embeddings_env = os.getenv("USE_EMBEDDINGS", "true")
@@ -77,7 +79,7 @@ class MCPServerTemplate:
         
         # List available resources
         @self.server.list_resources()
-        async def list_resources() -> List[Resource]:
+        async def list_resources() -> list[Resource]:
             """List available resources."""
             return [
                 Resource(
@@ -98,7 +100,7 @@ class MCPServerTemplate:
         
         # List available tools
         @self.server.list_tools()
-        async def list_tools() -> List[Tool]:
+        async def list_tools() -> list[Tool]:
             """List available tools."""
             return [
                 Tool(
@@ -199,7 +201,7 @@ class MCPServerTemplate:
                 Tool(
                     name="assess_processing_risk",
                     description=(
-                        "Calculate Norwegian DPIA risk matrix using likelihood × impact × "
+                        "Calculate Norwegian DPIA risk matrix using likelihood x impact x "
                         "data sensitivity formula. Returns risk scores and recommendations. "
                         "Follows Datatilsynet risk assessment methodology."
                     ),
@@ -310,31 +312,32 @@ class MCPServerTemplate:
         
         # Handle tool calls
         @self.server.call_tool()
-        async def call_tool(name: str, arguments: Any) -> List[TextContent]:
+        async def call_tool(name: str, arguments: Any) -> list[TextContent]:
             """Handle tool calls."""
             logger.info(f"Received tool call: {name}")
             logger.debug(f"Arguments: {arguments}")
             
-            if name == "search_documentation":
-                return await self._search_documentation(arguments)
-            elif name == "update_documentation":
-                return await self._trigger_update(arguments)
-            elif name == "generate_dpia_template":
-                return await self._generate_dpia_template(arguments)
-            elif name == "check_gdpr_compliance":
-                return await self._check_gdpr_compliance(arguments)
-            elif name == "analyze_codebase_for_dpia":
-                return await self._analyze_codebase_for_dpia(arguments)
-            elif name == "assess_processing_risk":
-                return await self._assess_processing_risk(arguments)
-            elif name == "recommend_safeguards":
-                return await self._recommend_safeguards(arguments)
-            else:
-                raise ValueError(f"Unknown tool: {name}")
+            match name:
+                case "search_documentation":
+                    return await self._search_documentation(arguments)
+                case "update_documentation":
+                    return await self._trigger_update(arguments)
+                case "generate_dpia_template":
+                    return await self._generate_dpia_template(arguments)
+                case "check_gdpr_compliance":
+                    return await self._check_gdpr_compliance(arguments)
+                case "analyze_codebase_for_dpia":
+                    return await self._analyze_codebase_for_dpia(arguments)
+                case "assess_processing_risk":
+                    return await self._assess_processing_risk(arguments)
+                case "recommend_safeguards":
+                    return await self._recommend_safeguards(arguments)
+                case _:
+                    raise ValueError(f"Unknown tool: {name}")
         
         # List available prompts
         @self.server.list_prompts()
-        async def list_prompts() -> List[Prompt]:
+        async def list_prompts() -> list[Prompt]:
             """List available prompts."""
             return [
                 Prompt(
@@ -356,7 +359,7 @@ class MCPServerTemplate:
         
         # Handle prompt requests
         @self.server.get_prompt()
-        async def get_prompt(name: str, arguments: Dict[str, str]) -> GetPromptResult:
+        async def get_prompt(name: str, arguments: dict[str, str]) -> GetPromptResult:
             """Handle prompt requests."""
             if name == "search_help":
                 return await self._get_search_help_prompt()
@@ -364,7 +367,7 @@ class MCPServerTemplate:
                 return await self._get_api_usage_prompt(arguments)
             else:
                 raise ValueError(f"Unknown prompt: {name}")
-    async def _search_documentation(self, arguments: Dict[str, Any]) -> List[TextContent]:
+    async def _search_documentation(self, arguments: dict[str, Any]) -> list[TextContent]:
         """Search documentation tool implementation."""
         # Sanitize all input arguments (MCP-01: Prompt Injection Protection)
         safe_arguments = sanitize_tool_arguments(arguments)
@@ -413,10 +416,10 @@ class MCPServerTemplate:
             logger.error(f"Error during search: {e}", exc_info=True)
             return [TextContent(
                 type="text",
-                text=f"Error performing search: {str(e)}"
+                text=f"Error performing search: {e!s}"
             )]
     
-    async def _trigger_update(self, arguments: Dict[str, Any]) -> List[TextContent]:
+    async def _trigger_update(self, arguments: dict[str, Any]) -> list[TextContent]:
         """Manually trigger documentation update."""
         logger.info("Manual documentation update triggered")
         
@@ -434,12 +437,15 @@ class MCPServerTemplate:
             logger.error(f"Error during update: {e}", exc_info=True)
             return [TextContent(
                 type="text",
-                text=f"Error updating documentation: {str(e)}"
+                text=f"Error updating documentation: {e!s}"
             )]
     
     async def _update_documentation(self):
         """Update documentation by scraping and indexing per source to avoid rate limits."""
         logger.info("Starting documentation update (processing sources individually)")
+        
+        # Collect errors for ExceptionGroup (Python 3.11+)
+        errors: list[Exception] = []
         
         try:
             # Get all sources
@@ -494,10 +500,12 @@ class MCPServerTemplate:
                     # Small delay to avoid rate limits
                     await asyncio.sleep(1)
                     
-                except asyncio.TimeoutError:
+                except TimeoutError:
                     logger.warning(f"  ⚠ Timeout scraping {source.name}")
+                    errors.append(TimeoutError(f"Timeout scraping {source.name}"))
                 except Exception as e:
                     logger.error(f"  ✗ Error processing {source.name}: {e}")
+                    errors.append(e)
             
             # Process each PDF source individually
             for idx, source in enumerate(pdf_sources, 1):
@@ -548,16 +556,23 @@ class MCPServerTemplate:
                     
                 except Exception as e:
                     logger.error(f"  ✗ Error processing PDF {source.name}: {e}")
+                    errors.append(e)
             
             logger.info(
                 f"Documentation update complete: {total_chunks} chunks from "
                 f"{total_docs} documents (processed individually)"
             )
             
+            # Raise ExceptionGroup if there were any errors (Python 3.11+)
+            if errors:
+                logger.warning(f"Completed with {len(errors)} errors")
+                # Don't raise, just log - we want partial success
+            
         except Exception as e:
             logger.error(f"Error during documentation update: {e}", exc_info=True)
+            raise
     
-    async def _generate_dpia_template(self, arguments: Dict[str, Any]) -> List[TextContent]:
+    async def _generate_dpia_template(self, arguments: dict[str, Any]) -> list[TextContent]:
         """Generate Norwegian DPIA template compliant with GDPR Article 35 and Datatilsynet guidelines."""
         logger.info("Generating DPIA template")
         
@@ -583,9 +598,9 @@ class MCPServerTemplate:
             
         except Exception as e:
             logger.error(f"Error generating DPIA template: {e}", exc_info=True)
-            return [TextContent(type="text", text=f"Error: {str(e)}")]
+            return [TextContent(type="text", text=f"Error: {e!s}")]
     
-    async def _check_gdpr_compliance(self, arguments: Dict[str, Any]) -> List[TextContent]:
+    async def _check_gdpr_compliance(self, arguments: dict[str, Any]) -> list[TextContent]:
         """Verify technical implementation against GDPR Article 35 and Datatilsynet checklist."""
         logger.info("Checking GDPR compliance")
         
@@ -601,9 +616,9 @@ class MCPServerTemplate:
             
         except Exception as e:
             logger.error(f"Error checking compliance: {e}", exc_info=True)
-            return [TextContent(type="text", text=f"Error: {str(e)}")]
+            return [TextContent(type="text", text=f"Error: {e!s}")]
     
-    async def _analyze_codebase_for_dpia(self, arguments: Dict[str, Any]) -> List[TextContent]:
+    async def _analyze_codebase_for_dpia(self, arguments: dict[str, Any]) -> list[TextContent]:
         """Analyze codebase for personal data handling and privacy risks."""
         logger.info("Analyzing codebase for DPIA")
         
@@ -627,10 +642,10 @@ class MCPServerTemplate:
             
         except Exception as e:
             logger.error(f"Error analyzing codebase: {e}", exc_info=True)
-            return [TextContent(type="text", text=f"Error: {str(e)}")]
+            return [TextContent(type="text", text=f"Error: {e!s}")]
     
-    async def _assess_processing_risk(self, arguments: Dict[str, Any]) -> List[TextContent]:
-        """Calculate Norwegian DPIA risk matrix using likelihood × impact × data sensitivity."""
+    async def _assess_processing_risk(self, arguments: dict[str, Any]) -> list[TextContent]:
+        """Calculate Norwegian DPIA risk matrix using likelihood x impact x data sensitivity."""
         logger.info("Assessing processing risk")
         
         try:
@@ -649,9 +664,9 @@ class MCPServerTemplate:
             
         except Exception as e:
             logger.error(f"Error assessing risk: {e}", exc_info=True)
-            return [TextContent(type="text", text=f"Error: {str(e)}")]
+            return [TextContent(type="text", text=f"Error: {e!s}")]
     
-    async def _recommend_safeguards(self, arguments: Dict[str, Any]) -> List[TextContent]:
+    async def _recommend_safeguards(self, arguments: dict[str, Any]) -> list[TextContent]:
         """Provide technical and organizational recommendations based on GDPR Article 25."""
         logger.info("Generating safeguard recommendations")
         
@@ -671,7 +686,7 @@ class MCPServerTemplate:
             
         except Exception as e:
             logger.error(f"Error generating recommendations: {e}", exc_info=True)
-            return [TextContent(type="text", text=f"Error: {str(e)}")]
+            return [TextContent(type="text", text=f"Error: {e!s}")]
     
     # Helper methods for Norwegian DPIA tools
     
@@ -755,7 +770,7 @@ Er databehandlingen nødvendig og proporsjonal?
 | [Risiko 1] | Lav/Mulig/Høy | Lav/Medium/Høy | | | |
 | [Risiko 2] | Lav/Mulig/Høy | Lav/Medium/Høy | | | |
 
-**Risikoformel:** Sannsynlighet × Alvorlighetsgrad × Datakänslighetsfaktor
+**Risikoformel:** Sannsynlighet x Alvorlighetsgrad x Datakänslighetsfaktor
 
 ---
 
@@ -909,7 +924,7 @@ Is the processing necessary and proportionate?
 | [Risk 1] | Low/Possible/High | Low/Medium/High | | | |
 | [Risk 2] | Low/Possible/High | Low/Medium/High | | | |
 
-**Risk Formula:** Likelihood × Severity × Data Sensitivity Factor
+**Risk Formula:** Likelihood x Severity x Data Sensitivity Factor
 
 ---
 
@@ -1087,7 +1102,7 @@ Is the processing necessary and proportionate?
         report += "|---|---|---|---|---|\n"
         
         total_score = 0
-        for idx, risk in enumerate(risks[:5]):  # Limit to first 5 risks
+        for _, risk in enumerate(risks[:5]):  # Limit to first 5 risks
             likelihood_score = 2  # Default medium
             severity_score = 2    # Default medium
             data_sensitivity = sensitivity_multiplier.get(sensitivity, 1.0)
@@ -1142,7 +1157,6 @@ Is the processing necessary and proportionate?
     
     def _get_current_date(self) -> str:
         """Get current date in ISO format."""
-        from datetime import datetime
         return datetime.now().strftime("%Y-%m-%d")
     
     async def _get_search_help_prompt(self) -> GetPromptResult:
@@ -1165,7 +1179,7 @@ Is the processing necessary and proportionate?
     
     async def _get_api_usage_prompt(
         self,
-        arguments: Dict[str, str]
+        arguments: dict[str, str]
     ) -> GetPromptResult:
         """Get API usage prompt."""
         topic = arguments.get("topic", "general")
@@ -1224,7 +1238,7 @@ Use the `update_documentation` tool to manually refresh the documentation.
             if doc_count == 0:
                 logger.info("No existing documents, performing initial scrape in background")
                 # Schedule scraping as background task instead of awaiting
-                asyncio.create_task(self._update_documentation_background())
+                self._background_task = asyncio.create_task(self._update_documentation_background())
             else:
                 logger.info(f"Loaded {doc_count} existing documents")
         except Exception as e:
@@ -1291,15 +1305,16 @@ async def main():
 
 async def run_http_server(server_instance: MCPServerTemplate):
     """Run the server in HTTP mode using StreamableHTTP and SSE transports."""
-    import uvicorn
-    from starlette.applications import Starlette
-    from starlette.routing import Route, Mount
-    from starlette.responses import JSONResponse
-    from starlette.middleware.cors import CORSMiddleware
-    from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
-    from starlette.types import Receive, Scope, Send
     import contextlib
     from collections.abc import AsyncIterator
+
+    import uvicorn
+    from mcp.server.streamable_http_manager import StreamableHTTPSessionManager
+    from starlette.applications import Starlette
+    from starlette.middleware.cors import CORSMiddleware
+    from starlette.responses import JSONResponse
+    from starlette.routing import Mount, Route
+    from starlette.types import Receive, Scope, Send
     
     port = int(os.getenv("HTTP_PORT", "3000"))
     

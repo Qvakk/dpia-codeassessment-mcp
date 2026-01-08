@@ -2,6 +2,10 @@
 
 An MCP server for **Data Protection Impact Assessment (DPIA)** analysis with semantic search over GDPR, Datatilsynet guidance, EDPB guidelines, and international data protection regulations.
 
+## Lite Version
+
+Looking for a lighter alternative? Check out **[dpia-lite-mcp](https://github.com/Qvakk/dpia-lite-mcp)** - a simplified version without sentence-transformers and ChromaDB dependencies. Perfect for lower memory environments or when you don't need semantic searh.
+
 ## Quick Start
 
 ### Start Container (stdio mode - default)

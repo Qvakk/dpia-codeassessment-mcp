@@ -2,15 +2,13 @@
 Scheduler for automated documentation updates.
 """
 
-import asyncio
 import logging
 import os
-from datetime import datetime, time as dt_time
-from typing import Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
-from apscheduler.triggers.interval import IntervalTrigger
 
 logger = logging.getLogger(__name__)
 
@@ -20,9 +18,9 @@ class DocumentationScheduler:
     
     def __init__(
         self,
-        update_callback: Callable,
-        interval_days: Optional[int] = None,
-        update_time: Optional[str] = None,
+        update_callback: Callable[[], Any],
+        interval_days: int | None = None,
+        update_time: str | None = None,
     ):
         """
         Initialize scheduler.

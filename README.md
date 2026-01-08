@@ -4,7 +4,7 @@ An MCP server for **Data Protection Impact Assessment (DPIA)** analysis with sem
 
 ## Lite Version
 
-Looking for a lighter alternative? Check out **[dpia-lite-mcp](https://github.com/Qvakk/dpia-lite-mcp)** - a simplified version without sentence-transformers and ChromaDB dependencies. Perfect for lower memory environments or when you don't need semantic searh.
+Looking for a lighter alternative? Check out **[dpia-lite-mcp](https://github.com/Qvakk/dpia-lite-mcp)** - a simplified version without sentence-transformers and ChromaDB dependencies. Perfect for lower memory environments or when you don't need semantic search.
 
 ## Quick Start
 
@@ -33,29 +33,26 @@ Container: `dpia-codeassessment-mcp`
 }
 ```
 
-### Test the Tool
+## Tools
 
-```bash
-# Available tools via MCP:
-# - search_documentation
-# - analyze_codebase_for_dpia
-# - assess_processing_risk
-# - check_gdpr_compliance
-# - generate_dpia_template
-# - recommend_safeguards
-
-# Example query:
-# "search_documentation" with query="GDPR Article 35 DPIA requirements"
-```
+| Tool | Description |
+|------|-------------|
+| `search_documentation` | Semantic search over GDPR, Datatilsynet, EDPB documents |
+| `update_documentation` | Manually trigger documentation re-scrape and re-index |
+| `analyze_codebase_for_dpia` | Scan code for personal data patterns, storage, third-party services |
+| `assess_processing_risk` | Calculate risk matrix (Likelihood x Severity x Sensitivity) |
+| `check_gdpr_compliance` | Generate GDPR Article 35 compliance checklist |
+| `generate_dpia_template` | Create full DPIA document template (Norwegian/English) |
+| `recommend_safeguards` | Get technical/organisational measure recommendations |
 
 ## Features
 
-- 🔍 Semantic search over GDPR, Datatilsynet, EDPB guidelines (12 authoritative sources)
-- 🇳🇴 Norwegian compliance focus (Datatilsynet templates, Personopplysningsloven)
-- 🤖 Multi-provider embeddings (HuggingFace local, OpenAI, Azure OpenAI)
-- ⏰ Auto-updating legal documents (daily at 02:00 UTC)
-- 🔌 Dual transport: stdio (local) or HTTP (StreamableHTTP + SSE)
-- 🐳 Docker containerized, non-root user, minimal footprint
+- Semantic search over GDPR, Datatilsynet, EDPB guidelines (12 authoritative sources)
+- Norwegian compliance focus (Datatilsynet templates, Personopplysningsloven)
+- Multi-provider embeddings (HuggingFace local, OpenAI, Azure OpenAI)
+- Auto-updating legal documents (daily at 02:00 UTC)
+- Dual transport: stdio (local) or HTTP (StreamableHTTP + SSE)
+- Docker containerized, non-root user, minimal footprint
 
 ## Environment Configuration
 
@@ -122,7 +119,7 @@ docker logs technical-dpia-mcp-http -f
 
 ## Legal Sources
 
-13 authoritative sources indexed:
+12 authoritative sources indexed:
 - **Norwegian:** Datatilsynet, Lovdata, NTNU
 - **EU:** GDPR, EDPB guidelines, Schrems II decision
 - **International:** NIST Privacy Framework
@@ -132,10 +129,10 @@ Configuration: `data/legal_sources.csv`
 ## DPIA Assessment
 
 Complete DPIA in [DPIA.md](DPIA.md):
-- ✅ GDPR Article 35 compliance
-- ✅ Datatilsynet checklist
-- ✅ Risk assessment (MEDIUM)
-- ✅ Security safeguards
+- GDPR Article 35 compliance
+- Datatilsynet checklist
+- Risk assessment (MEDIUM)
+- Security safeguards
 
 **Key:** No personal data processed. Only public legal documents indexed.
 
@@ -143,4 +140,5 @@ Complete DPIA in [DPIA.md](DPIA.md):
 
 - Python 3.12+
 - Docker & Docker Compose
+- 512MB+ memory (2GB recommended)
 - 512MB+ memory
